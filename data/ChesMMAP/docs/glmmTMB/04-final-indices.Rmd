@@ -1,0 +1,410 @@
+
+# Final Indices
+
+## glmmTMB Summer Model
+
+```{r final-summer-model-select, }
+
+f_sum_id <- 9
+
+f_sum <- subset(glmmTMB_summer_table, season_model == f_sum_id)
+
+
+
+```
+
+Model `r paste0(f_sum_id)` (see Section \@ref(summermodel9)) was chosen among all summer models. The mean for this model was `r paste0(f_sum$mean_short)`, the dispersion was `r paste0(f_sum$dispformula_short)`, and the zero inflation was `r paste0(f_sum$ziformula)` (i.e., no zero inflation). The model fit to observed data is in Fig. \@ref(fig:final-summer-index-fit) and the final index based on this model is in Fig. \@ref(fig:final-summer-index).
+
+```{r final-summer-model, }
+
+f_sum_model_dir <- paste0("glmmTMB/model_summer_", f_sum_id)
+f_sum_model <- readRDS(paste0(f_sum_model_dir, "/model_summer_", f_sum_id, ".rds"))
+f_sum_data_raw <- data.frame(f_sum_model[["frame"]]) %>% rename(`offset(log(areasw))` = `offset.log.areasw..`)
+f_sum_data <- f_sum_data_raw %>% select(-c(count, `offset(log(areasw))`))
+
+
+
+
+f_sum_data_factors <- f_sum_data %>% select(where(is.factor)) %>% distinct()
+new_data_n_rows <- nrow(f_sum_data_factors)
+f_sum_data_factors_names <- names(f_sum_data_factors)
+
+
+
+f_sum_data_obs <- 
+  f_sum_data_raw %>%
+  mutate(CPUE = count/exp(`offset(log(areasw))`)) %>%
+  group_by(across(contains("factor"))) %>%
+  summarize(obs = mean(CPUE)) %>%
+  ungroup()
+
+
+f_sum_cont_covariates <- f_sum_data %>% select(!where(is.factor))
+
+
+if(ncol(f_sum_cont_covariates) == 0)
+{
+  f_sum_new_data <- f_sum_data_factors
+  
+} else {
+  n_cont_covariates <- ncol(f_sum_cont_covariates)
+  new_f_sum_cont_covariates <- as.data.frame(matrix(NA, ncol = n_cont_covariates, nrow = new_data_n_rows))
+  #new_f_sum_cont_covariates <- f_sum_cont_covariates[FALSE,]
+  names(new_f_sum_cont_covariates) <- names(f_sum_cont_covariates)
+  
+  
+    for(i in c(1:length(names(f_sum_cont_covariates))))
+    {
+      temp_vec <- f_sum_cont_covariates[,i]
+      temp_vec_mean <- mean(temp_vec)
+      new_f_sum_cont_covariates[,i] <- rep(temp_vec_mean, times = new_data_n_rows)
+   
+    
+    }
+  
+  f_sum_new_data <- cbind(f_sum_data_factors, new_f_sum_cont_covariates)
+  
+  }
+
+f_sum_new_data$"areasw" <- rep(1, times = new_data_n_rows)
+
+
+model_fit <-
+  f_sum_new_data %>%
+  mutate(pred = predict(f_sum_model, newdata=f_sum_new_data,type="response",se.fit=T)[[1]],
+         pred_se = predict(f_sum_model, newdata=f_sum_new_data,type="response",se.fit=T)[[2]]) %>%
+  full_join(f_sum_data_obs, by = f_sum_data_factors_names)
+
+
+```
+
+```{r final-summer-index-fit, fig.cap = "Fit plot for final standardized index for ChesMMAP summer data. Lines are model fits and points are observed data.", cache = TRUE}
+
+  f_sum_fit_plot <- 
+    ggplot(model_fit, aes(x = year_factor, y = pred)) +
+      geom_line(aes(group = 1)) +
+      geom_point(aes(y = obs)) +
+      scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                       labels = seq(2005, 2020, by = 5)) +
+      labs(y = "CPUE",
+         x = "") +
+      theme_bw()
+
+if(length(f_sum_data_factors_names) == 1 & c("year_factor") %in% f_sum_data_factors_names)
+{
+  print(f_sum_fit_plot)
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("new_region_name_factor") %in% f_sum_data_factors_names)
+{
+  f_sum_fit_plot <-
+    f_sum_fit_plot +
+    facet_wrap(~new_region_name_factor,
+               scales = "free_y",
+               labeller = as_labeller(c(`1` = "1 - Maryland",
+                                    `2` = "2 - Maryland",
+                                    `3` = "3 - Virginia",
+                                    `4` = "4 - Virginia"))
+             )
+  print(f_sum_fit_plot)
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("month_name_factor") %in% f_sum_data_factors_names)
+{
+  f_sum_fit_plot <-
+    f_sum_fit_plot +
+    facet_wrap(~month_name_factor,
+               scales = "free_y")
+    
+  print(f_sum_fit_plot)
+  
+  
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("month_name_factor") %in% f_sum_data_factors_names & c("new_region_name_factor") %in% f_sum_data_factors_names)
+{
+  f_sum_fit_plot <-
+    f_sum_fit_plot +
+    facet_wrap(~month_name_factor + new_region_name_factor,
+               scales = "free_y")
+    
+  print(f_sum_fit_plot)
+  
+  
+}
+
+
+```
+
+```{r final-summer-index, fig.width = 5, fig.height = 3, fig.cap = "Final standardized abundance for ChesMMAP summer data. Index is scaled to the maximum value of the index.", cache = TRUE}
+
+
+if(length(f_sum_data_factors_names) == 1 & c("year_factor") %in% f_sum_data_factors_names)
+{
+  
+  f_sum_index <- 
+    model_fit %>%
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+  
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("new_region_name_factor") %in% f_sum_data_factors_names)
+{
+    f_sum_index <- 
+    model_fit %>%
+    filter(new_region_name_factor == 3) %>%
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred)) 
+
+    
+  
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("month_name_factor") %in% f_sum_data_factors_names)
+{
+    f_sum_index <- 
+    model_fit %>%
+    filter(month_name_factor == "July")
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+
+  
+}
+
+if(length(f_sum_data_factors_names) == 2 & c("month_name_factor") %in% f_sum_data_factors_names & c("new_region_name_factor") %in% f_sum_data_factors_names)
+{
+    f_sum_index <- 
+    model_fit %>%
+    filter(month_name_factor == "July") %>%
+    filter(new_region_name_factor == 1)
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+
+
+  
+  
+}
+
+
+f_sum_index_plot <-
+  ggplot(f_sum_index, aes(x = year_factor, y = scaled_pred_max)) +
+  geom_line(aes(group = 1)) +
+  scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  labs(x = "",
+       y = "") +
+  theme_bw()
+
+print(f_sum_index_plot)
+
+```
+
+\clearpage
+
+## glmmTMB Fall Model
+
+```{r final-fall-model-select, }
+
+f_fall_id <- 8
+
+f_fall <- subset(glmmTMB_fall_table, season_model == f_fall_id)
+
+```
+
+Model `r paste0(f_fall_id)` (see Section \@ref(fallmodel8)) was chosen among all fall models. The mean for this model was `r paste0(f_fall$mean_short)`, the dispersion was `r paste0(f_fall$dispformula_short)`, and the zero inflation was `r paste0(f_fall$ziformula)` (i.e., no zero inflation). The model fit to observed data is in Fig. \@ref(fig:final-fall-index-fit) and the final index based on this model is in Fig. \@ref(fig:final-fall-index).
+
+```{r final-fall-model, }
+
+f_fall_model_dir <- paste0("glmmTMB/model_fall_", f_fall_id)
+f_fall_model <- readRDS(paste0(f_fall_model_dir, "/model_fall_", f_fall_id, ".rds"))
+f_fall_data_raw <- data.frame(f_fall_model[["frame"]]) %>% rename(`offset(log(areasw))` = `offset.log.areasw..`)
+f_fall_data <- f_fall_data_raw %>% select(-c(count, `offset(log(areasw))`))
+
+
+
+
+f_fall_data_factors <- f_fall_data %>% select(where(is.factor)) %>% distinct()
+new_data_n_rows <- nrow(f_fall_data_factors)
+f_fall_data_factors_names <- names(f_fall_data_factors)
+
+
+
+f_fall_data_obs <- 
+  f_fall_data_raw %>%
+  mutate(CPUE = count/exp(`offset(log(areasw))`)) %>%
+  group_by(across(contains("factor"))) %>%
+  summarize(obs = mean(CPUE)) %>%
+  ungroup()
+
+
+f_fall_cont_covariates <- f_fall_data %>% select(!where(is.factor))
+
+
+if(ncol(f_fall_cont_covariates) == 0)
+{
+  f_fall_new_data <- f_fall_data_factors
+  
+} else {
+  n_cont_covariates <- ncol(f_fall_cont_covariates)
+  new_f_fall_cont_covariates <- as.data.frame(matrix(NA, ncol = n_cont_covariates, nrow = new_data_n_rows))
+  #new_f_fall_cont_covariates <- f_fall_cont_covariates[FALSE,]
+  names(new_f_fall_cont_covariates) <- names(f_fall_cont_covariates)
+  
+  
+    for(i in c(1:length(names(f_fall_cont_covariates))))
+    {
+      temp_vec <- f_fall_cont_covariates[,i]
+      temp_vec_mean <- mean(temp_vec)
+      new_f_fall_cont_covariates[,i] <- rep(temp_vec_mean, times = new_data_n_rows)
+   
+    
+    }
+  
+  f_fall_new_data <- cbind(f_fall_data_factors, new_f_fall_cont_covariates)
+  
+  }
+
+f_fall_new_data$"areasw" <- rep(1, times = new_data_n_rows)
+
+
+model_fit_fall <-
+  f_fall_new_data %>%
+  mutate(pred = predict(f_fall_model, newdata=f_fall_new_data,type="response",se.fit=T)[[1]],
+         pred_se = predict(f_fall_model, newdata=f_fall_new_data,type="response",se.fit=T)[[2]]) %>%
+  full_join(f_fall_data_obs, by = f_fall_data_factors_names)
+
+
+```
+
+
+
+```{r final-fall-index-fit, fig.cap = "Fit plot for final standardized index for ChesMMAP fall data. Lines are model fits and points are observed data.", cache = TRUE}
+
+  f_fall_fit_plot <- 
+    ggplot(model_fit_fall, aes(x = year_factor, y = pred)) +
+      geom_line(aes(group = 1)) +
+      geom_point(aes(y = obs)) +
+      scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                       labels = seq(2005, 2020, by = 5)) +
+      labs(y = "CPUE",
+         x = "") +
+      theme_bw()
+
+if(length(f_fall_data_factors_names) == 1 & c("year_factor") %in% f_fall_data_factors_names)
+{
+  print(f_fall_fit_plot)
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("new_region_name_factor") %in% f_fall_data_factors_names)
+{
+  f_fall_fit_plot <-
+    f_fall_fit_plot +
+    facet_wrap(~new_region_name_factor,
+               scales = "free_y",
+               labeller = as_labeller(c(`1` = "1 - Maryland",
+                                    `2` = "2 - Maryland",
+                                    `3` = "3 - Virginia",
+                                    `4` = "4 - Virginia"))
+             )
+  print(f_fall_fit_plot)
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("month_name_factor") %in% f_fall_data_factors_names)
+{
+  f_fall_fit_plot <-
+    f_fall_fit_plot +
+    facet_wrap(~month_name_factor,
+               scales = "free_y")
+    
+  print(f_fall_fit_plot)
+  
+  
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("month_name_factor") %in% f_fall_data_factors_names & c("new_region_name_factor") %in% f_fall_data_factors_names)
+{
+  f_fall_fit_plot <-
+    f_fall_fit_plot +
+    facet_wrap(~month_name_factor + new_region_name_factor,
+               scales = "free_y")
+    
+  print(f_fall_fit_plot)
+  
+  
+}
+
+
+```
+
+
+
+```{r final-fall-index, fig.width = 5, fig.height = 3, fig.cap = "Final standardized abundance for ChesMMAP fall data. Index is scaled to the maximum value of the index.", cache = TRUE}
+
+
+if(length(f_fall_data_factors_names) == 1 & c("year_factor") %in% f_fall_data_factors_names)
+{
+  
+  f_fall_index <- 
+    model_fit_fall %>%
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+  
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("new_region_name_factor") %in% f_fall_data_factors_names)
+{
+    f_fall_index <- 
+    model_fit_fall %>%
+    filter(new_region_name_factor == 3) %>%
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred)) 
+
+    
+  
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("month_name_factor") %in% f_fall_data_factors_names)
+{
+    f_fall_index <- 
+    model_fit_fall %>%
+    filter(month_name_factor == "July")
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+
+  
+}
+
+if(length(f_fall_data_factors_names) == 2 & c("month_name_factor") %in% f_fall_data_factors_names & c("new_region_name_factor") %in% f_fall_data_factors_names)
+{
+    f_fall_index <- 
+    model_fit_fall %>%
+    filter(month_name_factor == "July") %>%
+    filter(new_region_name_factor == 1)
+    mutate(mean_pred = mean(pred)) %>%
+    mutate(scaled_pred_mean = pred/mean_pred) %>%
+    mutate(scaled_pred_max = pred/max(pred))
+
+}
+
+
+f_fall_index_plot <-
+  ggplot(f_fall_index, aes(x = year_factor, y = scaled_pred_max)) +
+  geom_line(aes(group = 1)) +
+  scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  labs(x = "",
+       y = "") +
+  theme_bw()
+
+print(f_fall_index_plot)
+
+```
+

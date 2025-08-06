@@ -1,0 +1,134 @@
+
+\clearpage
+<!-- \clearpage forces all figures above it in the .tex file to be printed 
+before continuing with the text. This can leave large white spaces. I used
+this here to force figures to stay in the section for their respective models.-->
+
+
+`r paste0("### Model ", {{mod_num}}, "{#summermodel", {{mod_num}}, "}")`
+
+`r temp_summer_table <- glmmTMB_summer_table[which(glmmTMB_summer_table$season_model == {{mod_num}}),]`
+
+`r paste0("Mean: ", temp_summer_table$mean_short)`
+
+`r paste0("Dispersion: ", temp_summer_table$dispformula_short)`
+
+`r paste0("Zero Inflation: ", temp_summer_table$ziformula)`
+
+`r paste0("AIC: ", round(temp_summer_table$AIC, digits = 2))`
+
+`r paste0("Deviance Explained: ", temp_summer_table$dev_exp)`
+
+```{r model-{{mod_num}}-fit-plots, fig.cap = paste0("DHARMa output for model ", {{mod_num}}, " including qq plot for the residuals, overall model fit, and fit for the year effect."), cache = TRUE}
+
+dir <- paste0("glmmTMB/model_summer_", {{mod_num}})
+
+modelfit_file <- paste0(dir, "/model_summer_", {{mod_num}}, "_model_fit.png")
+yearfit_file <- paste0(dir, "/model_summer_", {{mod_num}}, "_model_fit_year_factor.png")
+
+qqplot_file <- paste0(dir, "/model_summer_", {{mod_num}}, "_qq_plot.png")
+rootgram_file <- paste0(dir, "/model_summer_", {{mod_num}}, "_model_fit_rootgram.png")
+
+
+modelfit_plot <-
+ggdraw() +
+draw_image(modelfit_file) #+
+  #theme(plot.margin=unit(c(-0.5,-0.5,-0.5,-0.5), 'cm'))
+
+yearfit_plot <-
+ggdraw() +
+draw_image(yearfit_file) #+
+  #theme(plot.margin=unit(c(-0.5,-0.5,-0.5,-0.5), 'cm'))
+
+
+qq_plot <-
+  ggdraw() +
+  draw_image(qqplot_file) #+
+  #theme(plot.margin=unit(c(-0.5,-0.5,-0.5,-0.5), 'cm'))
+
+
+# final_plot <- plot_grid(modelfit_plot,
+#                         qq_plot,
+#                         yearfit_plot,
+#                         rootgram_plot)
+
+final_plot <- plot_grid(qq_plot,
+                        modelfit_plot,
+                        yearfit_plot,
+                        nrow = 1)
+
+#\subsection{`r paste("Model", i)`}
+
+# cat("\\subsection{Model ", i, "}")
+print(final_plot)
+```
+
+```{r, }
+
+files <- list.files(path = dir, pattern = "\\.png$", full.names = TRUE)
+
+# modelfit_file_short <- str_split(modelfit_file, "/")[[1]][3]
+# yearfit_file_short <- str_split(yearfit_file, "/")[[1]][3]
+# qqplot_file_short <- str_split(qqplot_file, "/")[[1]][3]
+# rootgram_file_short <- str_split(rootgram_file, "/")[[1]][3]
+collage_file <- paste0(dir, "/collage.png")
+
+files_to_exclude <- c(collage_file, modelfit_file, yearfit_file, qqplot_file, rootgram_file)
+
+otherfit_files <- base::setdiff(files, files_to_exclude)
+
+run_other_plots <- ifelse(length(otherfit_files) == 0, FALSE, TRUE)
+
+```
+
+```{r , eval = run_other_plots}
+
+# pngfiles <- list.files(path = dir, pattern = "\\.png$", full.names = TRUE)
+
+name <- "other_fit_plots"
+
+columns <- ifelse(length(otherfit_files) <= 4, "2", "3")
+
+ magick::image_read(otherfit_files) %>%
+      magick::image_montage(tile = columns, geometry = "x500+10+5") %>%
+      magick::image_convert("png") %>%
+      magick::image_write(
+        format = ".png", path = paste0(dir, "/collage.png"),
+        quality = 100
+      )
+
+ 
+
+
+```
+
+
+```{r model-{{mod_num}}-other-fit-plots, fig.height = 6, fig.width = 6, eval = run_other_plots, fig.cap = paste0("DHARMa output for factors other than year that were included in the mean for model ", {{mod_num}}), cache = TRUE}
+other_plot_collage_file <- paste0(dir, "/collage.png")
+
+collage_plot <-
+  ggdraw() +
+  draw_image(other_plot_collage_file)
+
+print(collage_plot)
+
+
+```
+
+
+
+
+```{r rootgram-model-{{mod_num}}, fig.height = 5, fig.width = 5, fig.cap = paste0("Hanging rootgram for summer model ", {{mod_num}}, "."), cache = TRUE}
+
+
+
+rootgram_plot <-
+  ggdraw() +
+  draw_image(rootgram_file) #+
+  #theme(plot.margin=unit(c(-0.5,-0.5,-0.5,-0.5), 'cm'))
+
+print(rootgram_plot)
+
+```
+
+

@@ -1,0 +1,29 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      before: |
+        <li><a href="./">A Minimal Book Example</a></li>
+      after: |
+        <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+    edit: https://github.com/USERNAME/REPO/edit/BRANCH/%s
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  includes:
+    in_header: preamble.tex
+  latex_engine: xelatex
+  keep_tex: yes
+  pandoc_args:
+    - '--lua-filter=scholarly-metadata.lua'
+    - '--lua-filter=author-info-blocks.lua'
+    - '--filter=C:\Users\mmace\AppData\Local\RStudio\pandoc-crossref'
+  page_margins:
+      bottom: 1
+      top: 1
+      right: 1
+      left: 1
+      header: 0.5
+      footer: 0.5
+      gutter: 0
+  csl: fisheries-research_mod.csl
+bookdown::epub_book: default

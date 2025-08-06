@@ -1,0 +1,56 @@
+--- 
+title: "Index standardization models for ChesMMAP survey data as part of ASMFC Atlantic Croaker assessment"
+author: 
+ - name: Marvin Mace
+   institute: [MDDNR]
+   email: marvin.mace@maryland.gov
+   correspondence: true
+institute:
+  - MDDNR: Maryland Department of Natural Resources, 580 Taylor Avenue B-2, Annapolis, MD 21401
+
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: article
+bibliography: [litcited.bib]
+# url: your book url like https://bookdown.org/yihui/bookdown
+# cover-image: path to the social sharing image like images/cover.jpg
+description: |
+ This document contains code for spatial models for index standardization
+link-citations: true
+linkcolor: blue
+csl: fisheries-research_mod.csl
+---
+
+
+
+```{r setoptions, echo = FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+options(tibble.print_max = Inf)
+
+
+```
+
+
+```{r loadlibraries, }
+
+library(tidyverse)
+library(knitr)
+# library(R2admb)
+# library(rprojroot)
+library(cowplot) # put ggplots in grid
+# library(sf)
+#library(rgdal)
+# library(RODBC) 
+library(kableExtra)
+# library(captioner)
+# library(officedown)
+# library(flextable)
+# library(officer)
+
+```
+
+
+
+

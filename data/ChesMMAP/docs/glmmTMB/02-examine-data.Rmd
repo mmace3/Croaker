@@ -1,0 +1,166 @@
+# Examine Data
+
+```{r load-data, }
+
+
+croaker_catch <- read.csv("ChesMMAP_AtlanticCroaker_Catch_2002_2024_new_adjusted.csv",
+                          header = TRUE) %>%
+                 mutate(time = strptime(time, "%Y-%m-%dT%H:%M:%S", tz="UTC")) %>%
+                 mutate(date = as.Date(time, format = "%Y/%m/%d")) %>%
+                 mutate(year = format(date, "%Y")) %>%
+                 mutate(month_int = as.numeric(format(date, "%m"))) %>%
+                 mutate(month_name = format(date, "%b")) %>%
+                 mutate(month_name_factor = factor(month_name, 
+                                    levels = c("Mar", "Apr", "May", "Jun", "Jul", "Aug", 
+                                               "Sep", "Oct", "Nov"), 
+                                    ordered = TRUE)) %>%
+                 mutate(region_dstrat = paste(region, dstrat, sep = "_")) %>%
+                 mutate(new_dstrat = if_else(depth < 12.2, 1, 2)) %>%
+                 mutate(new_region_dstrat = paste(region, new_dstrat, sep = "_")) %>%
+                 filter(!is.na(depth)) %>%
+                 mutate(new_region = case_when(region %in% c("1", "A", "2") ~ 1,
+                                               region %in% c("3", "B") ~ 2,
+                                               region %in% c("4", "C") ~ 3,
+                                               region %in% c("5", "D") ~ 4)) %>%
+                 mutate(pos = if_else(count == 0, 0, 1)) %>%
+                 mutate(CPUE = count/areasw) %>%
+                 mutate(CPUE_km = count/(areasw/1000))%>%
+                 mutate(new_station = gsub('[ ]', '', station)) %>%
+                 mutate(new_region_name_factor = as.factor(new_region)) %>%
+                 mutate(year_factor = as.factor(year)) %>%
+                 mutate(areasw_km = areasw/1000) %>%
+                 mutate(season = case_when(month_name %in% c("Jun", "Jul") ~ "summer",
+                                           month_name %in% c("Sep", "Oct", "Nov") ~ "fall",
+                                           month_name %in% c("Mar", "Apr", "May") ~ "spring",
+                                           TRUE ~ "-99"))
+
+
+```
+
+
+## Catch Data
+
+Based on Figs. \@ref(fig:n-fig), \@ref(fig:count-fig), \@ref(fig:pos-fig)  below I initially decided to develop indices for fall (Sept, Oct, Nov) and summer (Jun, July). For fall, we have to use all three months to get at least some data in each year in each region. For summer we have to use June and July to have some data in each year. I decided against a spring index because of the limited catch, especially in the Maryland regions, in March, April, and May.
+
+
+```{r }
+
+croaker_summary_by_rym <-
+  croaker_catch %>%
+  group_by(year_factor, new_region_name_factor, month_name_factor) %>%
+  summarize(n = n(),
+            pos = mean(pos),
+            count = sum(count)) %>%
+  ungroup()
+
+
+```
+
+
+```{r n-fig, fig.cap = "Sample size for all ChesMMAP data by year, month, and location.", fig.height = 9, fig.width = 12, cache = TRUE}
+
+ggplot(croaker_summary_by_rym, aes(x = year_factor, y = month_name_factor, size = n)) +
+  geom_point(alpha = 0.5) +
+  scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  facet_wrap(~new_region_name_factor,
+             labeller = as_labeller(c(`1` = "1 - Maryland",
+                                    `2` = "2 - Maryland",
+                                    `3` = "3 - Virginia",
+                                    `4` = "4 - Virginia"))
+             ) +
+  labs(title = "ChesMMAP sample size by year, month, location",
+       x = "",
+       y = "",
+       size = "Sample size") +
+  theme_bw() +
+  theme(text=element_text(size=16))
+
+
+```
+
+
+
+```{r count-fig, fig.cap = "Total number of fish collected for all ChesMMAP data by year, month, and region.", fig.height = 9, fig.width = 12, cache = TRUE}
+
+ggplot(croaker_summary_by_rym, aes(x = year_factor, y = month_name_factor, size = sqrt(count))) +
+  geom_point(alpha = 0.5) +
+  scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  facet_wrap(~new_region_name_factor,
+             labeller = as_labeller(c(`1` = "1 - Maryland",
+                                      `2` = "2 - Maryland",
+                                      `3` = "3 - Virginia",
+                                      `4` = "4 - Virginia"))
+  ) +
+  labs(title = "ChesMMAP catch by year, month, location",
+       x = "",
+       y = "",
+       size = "sqrt(Total Catch)") +
+  theme_bw() +
+  theme(text=element_text(size=16))
+
+```
+
+
+
+```{r pos-fig, fig.cap = "Proportion positive tows for all ChesMMAP data by year, month, and region.", fig.width = 12, fig.height = 9, cache = TRUE}
+
+ggplot(croaker_summary_by_rym, aes(x = year_factor, y = month_name_factor, size = pos)) +
+  geom_point(alpha = 0.5) +
+  scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  facet_wrap(~new_region_name_factor,
+             labeller = as_labeller(c(`1` = "1 - Maryland",
+                                      `2` = "2 - Maryland",
+                                      `3` = "3 - Virginia",
+                                      `4` = "4 - Virginia"))
+  ) +
+  labs(title = "ChesMMAP proportion positive by year, month, location",
+       x = "",
+       y = "",
+       size = "Prop. Pos.") +
+  theme_bw() +
+  theme(text=element_text(size=16))
+
+```
+
+\clearpage
+
+```{r nominal-indices, }
+
+nominal_indices <-
+  croaker_catch %>%
+  filter(season %in% c("summer", "fall")) %>%
+  filter(!is.na(WT) & !is.na(SA) & !is.na(DO)) %>%
+  group_by(year_factor, season) %>%
+  summarize(nindex = mean(CPUE)) %>%
+  ungroup()
+  
+
+
+```
+
+
+```{r nominal-indices-chesmmap-fig, fig.height = 3, fig.width = 6, fig.cap = "Nominal abundance indices for ChesMMAP data for fall (September, October, November) and summer (June, July).", cache = TRUE}
+
+ggplot(nominal_indices, aes(x = year_factor, y = nindex)) +
+  geom_line(aes(group = 1)) +
+  geom_point() +
+  facet_wrap(~ season,
+             scales = "free_y") +
+    scale_x_discrete(breaks = seq(2005, 2020, by = 5),
+                   labels = seq(2005, 2020, by = 5)) +
+  labs(x = "",
+       y = "CPUE") +
+  theme_bw()
+  
+
+```
+
+
+## Nomial Indices
+
+After looking at the nominal indices for fall and summer (Fig. \@ref(fig:nominal-indices-chesmmap-fig)) it was decided to focus on summer and fall data to develop an index.
+
+

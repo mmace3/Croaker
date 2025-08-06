@@ -1,0 +1,18 @@
+
+
+# Background
+
+
+ChesMAPP is a fisheries independent survey conducted in the mainstem of the Chesapeake Bay, USA designed to collect data on fisheries species to support stock assessments [@Latouretal2023]. This survey uses a large mesh bottom trawl to sample juvenile and adult fish throughout the mainstem of Chesapeake Bay (Fig. \@ref(fig:chesmmap-survey-fig)). ChesMMAP started in 2002 and major modifications were made in 2018, which included the use of a new vessel, new sampling gear, and changes to the spatial and depth strata. For analyses in the current document, strata 1 and 2 for the 2002-2018 design were assigned to strata 1 of the post-2018 design, stratum 3 from the 2002-2018 was assigned to stratum 2 of the post-2018 design, and strata 4 and 5 of the 2002-2018 design were assigned to strata 3 and 4, respectively, of the post-2018 design (Fig. \@ref(fig:chesmmap-survey-fig)). For more details on ChesMMAP see Latour et al. [-@Latouretal2023].
+
+
+
+(ref:caption) Spatial and depth strata for ChesMMAP survey during 2002-2018 (left) and from 2018 to present (right). Figure from Latour et al. [-@Latouretal2023].
+
+```{r, chesmmap-survey-fig, fig.cap = "(ref:caption)", out.width = '100%'}
+
+knitr::include_graphics("ChesMMAP_strata_map_Latouretal2023.png")
+
+```
+
+\clearpage

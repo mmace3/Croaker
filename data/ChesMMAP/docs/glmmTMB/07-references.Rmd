@@ -1,0 +1,10 @@
+`r if (knitr::is_html_output()) '
+# References {-}
+'`
+
+\newpage
+
+__References__
+
+<div id="refs"></div>
+

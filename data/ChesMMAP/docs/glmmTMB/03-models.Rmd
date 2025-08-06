@@ -1,0 +1,138 @@
+# Models {#models}
+
+
+```{r read-in-model-table, }
+
+glmmTMB_model_table <- 
+  read.csv("glmmTMB/glmmTMB_results_table.csv",
+                                header = TRUE) %>%
+  mutate(mean_short = str_replace_all(mean, c("year_factor" = "year",
+                                              "new_region_name_factor" = "region",
+                                              "month_name_factor" = "month"))) %>%
+  mutate(dispformula_short = str_replace_all(dispformula, c("year_factor" = "year",
+                                                            "new_region_name_factor" = "region",
+                                                            "month_name_factor" = "month"))) %>%
+  mutate(ziformula_short = str_replace_all(ziformula, c("year_factor" = "year",
+                                                            "new_region_name_factor" = "region",
+                                                            "month_name_factor" = "month")))
+
+
+```
+
+
+```{r get-summer-model-table, }
+
+glmmTMB_summer_table <-
+  glmmTMB_model_table %>%
+  filter(season == "summer") %>%
+  mutate(dev_exp = round(dev_exp, digits = 2)) %>%
+  select(-c(model, season, converged, pdh, lhs, family, mean, dispformula, ziformula)) %>%
+  select(season_model, AIC, dev_exp, mean_short, dispformula_short, ziformula_short) %>%
+  arrange(AIC)
+
+kbl(glmmTMB_summer_table, 
+    booktabs = TRUE,
+    longtable = TRUE,
+    col.names = c("Model", "AIC", "%DE", "Mean", "Dispersion", "ZI"),
+    #format = "latex",
+    caption = "Summary of models for ChesMMAP summer standardized abundance.") %>%
+  kable_styling(latex_options = c("striped", "hold_position", 
+                                  "scale_down"),
+                font_size = 7) %>%
+  # landscape() %>%
+  I()
+
+
+```
+
+
+## Summer Models
+
+All of the models combined all ages and used a negative binomial distribution. Only models with an additive effect for year were included so that more complicated models that had, e.g. year and region interactions were not included.
+
+All models had some diagnostic issues according to the output from DHARMa, but this could be due to the large sample size resulting in significant results. All models were underpredicting the largest counts (see the hanging rootgrams).
+
+The best supported model according to AIC and percent deviance explained was Model `r glmmTMB_summer_table[1, "season_model"]`, which had `r glmmTMB_summer_table[1, "mean_short"]` for the mean, `r glmmTMB_summer_table[1, "dispformula_short"]` for the dispersion, and `r glmmTMB_summer_table[1, "ziformula_short"]` for the zero inflation (i.e, no zero inflation; Table \@ref(tab:get-summer-model-table)).
+
+After Model `r glmmTMB_summer_table[1, "season_model"]`, the top supported models all had year, region, and other co-variates for the mean, year and region for the dispersion model, and no zero inflation.
+
+
+```{r run-model-sections, include=FALSE, eval = FALSE}
+
+summer_models <- seq_along(glmmTMB_summer_table$season_model)
+
+
+
+out = NULL
+for (i in summer_models) {
+  out = c(out, knit_child('_run-model-sections.Rmd'))
+}
+```
+
+`r # paste(out, collapse = '\n')`
+
+```{r run-models, include=FALSE}
+summer_models <- seq_along(glmmTMB_summer_table$season_model)
+models <- 1:2
+src <- lapply(summer_models, function(mod_num) knit_expand(file = "_template.Rmd"))
+```
+
+`r knit(text = unlist(src))`
+
+## Fall Models
+
+```{r get-fall-model-table, }
+
+glmmTMB_fall_table <-
+  glmmTMB_model_table %>%
+  filter(season == "fall") %>%
+  mutate(dev_exp = round(dev_exp, digits = 2)) %>%
+  select(-c(model, season, converged, pdh, lhs, family, mean, dispformula, ziformula)) %>%
+  select(season_model, AIC, dev_exp, mean_short, dispformula_short, ziformula_short) %>%
+  arrange(AIC)
+
+kbl(glmmTMB_fall_table, 
+    booktabs = TRUE,
+    longtable = TRUE,
+    col.names = c("Model", "AIC", "%DE", "Mean", "Dispersion", "ZI"),
+    #format = "latex",
+    caption = "Summary of models for ChesMMAP fall standardized abundance.") %>%
+  kable_styling(latex_options = c("striped", "hold_position", 
+                                  "scale_down"),
+                font_size = 7) %>%
+  # landscape() %>%
+  I()
+
+```
+
+```{r, }
+
+glmmTMB_fall_table_short <-
+  glmmTMB_fall_table %>%
+  filter(str_detect(mean_short, fixed("year*region"), negate = TRUE))
+
+```
+
+
+All of the models combined all ages and used a negative binomial distribution. Although models with a year and region interaction are included below we decided to just focus on models with an additive effect for year.
+
+All models had some diagnostic issues according to the output from DHARMa, but this could be due to the large sample size resulting in significant results. All models were underpredicting the largest counts (see the hanging rootgrams).
+
+The best supported model (excluding models with a year and region interaction) was Model `r glmmTMB_fall_table_short[1, "season_model"]`, which had `r glmmTMB_fall_table_short[1, "mean_short"]` for the mean, `r glmmTMB_fall_table_short[1, "dispformula_short"]` for the dispersion, and `r glmmTMB_fall_table_short[1, "ziformula_short"]` for zero inflation (i.e., no zero inflation; Table \@ref(tab:get-fall-model-table)).
+
+After Model `r glmmTMB_fall_table_short[1, "season_model"]`, the next best supported models had a factor for year, month, and region for the mean, constant dispersion, and one model had no zero inflation and the other had region and month for the zero inflation model (Table \@ref(tab:get-fall-model-table)).
+
+
+
+```{r run-fall-models, include=FALSE}
+
+fall_models <- seq_along(glmmTMB_fall_table$season_model)
+
+src <- lapply(fall_models, function(mod_num) knit_expand(file = "_template-fall.Rmd"))
+
+```
+
+`r knit(text = unlist(src))`
+
+\clearpage
+
