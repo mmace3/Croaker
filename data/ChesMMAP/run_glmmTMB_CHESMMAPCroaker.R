@@ -359,10 +359,6 @@ for(j in unique(models_glmmTMB$season)) {
 }
 
 
-model8_fall <- readRDS("output/glmmTMB/model_fall_8/model_fall_8.rds")
-model8_summ <- readRDS("output/glmmTMB/model_summer_8/model_summer_8.rds")
-
-
 # Now get model results and create and save graphs for later use in document.
 
 models_glmmTMB_results <- data.frame(season = character(),
