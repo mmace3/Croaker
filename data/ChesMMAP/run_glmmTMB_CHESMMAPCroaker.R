@@ -320,7 +320,9 @@ for(j in unique(models_glmmTMB$season)) {
   temp_my_data <- subset(croaker_catch, month_name %in% temp_months & !is.na(WT) & !is.na(SA) & !is.na(DO)) %>%
     droplevels()
   
-  n_temp <- nrow(subset(models_glmmTMB, season == j))
+  temp_models_glmmTMB <- subset(models_glmmTMB, season == j)
+  
+  n_temp <- nrow(temp_models_glmmTMB)
   
   print(paste0("This is season ", j))
 
@@ -329,13 +331,17 @@ for(j in unique(models_glmmTMB$season)) {
   for(i in c(1:n_temp)) {
     
     print(paste0("This is model ", i))
+    print(paste0("The mean for model ", i, " in season ", j, " is ", temp_models_glmmTMB$mean[i]))
+    print(paste0("The dispersion for model ", i , " in season ", j, " is ", temp_models_glmmTMB$dispformula[i]))
+    print(paste0("The zi for model ", i , " in season ", j, " is ", temp_models_glmmTMB$ziformula[i]))
+
     
-    temp_results <- try_glmmTMB(models_glmmTMB$lhs[i],
-                                models_glmmTMB$mean[i],
-                                disp = models_glmmTMB$dispformula[i],
-                                zinf = models_glmmTMB$ziformula[i],
+    temp_results <- try_glmmTMB(temp_models_glmmTMB$lhs[i],
+                                temp_models_glmmTMB$mean[i],
+                                disp = temp_models_glmmTMB$dispformula[i],
+                                zinf = temp_models_glmmTMB$ziformula[i],
                                 iter = i,
-                                family = models_glmmTMB$family[i],
+                                family = temp_models_glmmTMB$family[i],
                                 data = temp_my_data)
 
     temp_dir <- paste0("output/glmmTMB/model_", j, "_", i)
@@ -344,13 +350,17 @@ for(j in unique(models_glmmTMB$season)) {
     {
       dir.create(temp_dir) 
     }
-    
+    print(paste0("temp_dir for model ", i, " in season ", j, " is ", temp_dir))
     saveRDS(temp_results,
             file = paste0(temp_dir, "/model_", j, "_", i, ".rds"))
     
     print(paste0("Done with season ", j, " model ", i))
   }
 }
+
+
+model8_fall <- readRDS("output/glmmTMB/model_fall_8/model_fall_8.rds")
+model8_summ <- readRDS("output/glmmTMB/model_summer_8/model_summer_8.rds")
 
 
 # Now get model results and create and save graphs for later use in document.

@@ -9,3 +9,4 @@
 /Literature
 *.xlsx
 *pdf
+.Rproj.user
