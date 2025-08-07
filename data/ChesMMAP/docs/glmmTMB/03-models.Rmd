@@ -79,6 +79,8 @@ src <- lapply(summer_models, function(mod_num) knit_expand(file = "_template.Rmd
 
 `r knit(text = unlist(src))`
 
+\clearpage
+
 ## Fall Models
 
 ```{r get-fall-model-table, }
@@ -96,7 +98,7 @@ kbl(glmmTMB_fall_table,
     longtable = TRUE,
     col.names = c("Model", "AIC", "%DE", "Mean", "Dispersion", "ZI"),
     #format = "latex",
-    caption = "Summary of models for ChesMMAP fall standardized abundance.") %>%
+    caption = "Summary of models for ChesMMAP fall standardized abundance. An NA for the AIC value indicates the model did not converge or the hessian was not invertible.") %>%
   kable_styling(latex_options = c("striped", "hold_position", 
                                   "scale_down"),
                 font_size = 7) %>%
@@ -114,7 +116,7 @@ glmmTMB_fall_table_short <-
 ```
 
 
-All of the models combined all ages and used a negative binomial distribution. Although models with a year and region interaction are included below we decided to just focus on models with an additive effect for year.
+All of the models combined all ages and used a negative binomial distribution. Although models with a year and region interaction are included below we decided to just focus on models with an additive effect for year and almost all models with a year and region interaction had convergence issues.
 
 All models had some diagnostic issues according to the output from DHARMa, but this could be due to the large sample size resulting in significant results. All models were underpredicting the largest counts (see the hanging rootgrams).
 

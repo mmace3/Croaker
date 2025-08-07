@@ -512,6 +512,7 @@ models_glmmTMB_table <-
   mutate(season_model = as.numeric(season_model)) %>%
   full_join(models_glmmTMB, by = c("season", "season_model"))
 
+
 write.csv(models_glmmTMB_table,
           file = "output/glmmTMB/glmmTMB_results_table.csv",
           row.names = FALSE)

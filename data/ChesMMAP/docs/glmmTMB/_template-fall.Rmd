@@ -19,7 +19,11 @@ this here to force figures to stay in the section for their respective models.--
 
 `r paste0("Deviance Explained: ", temp_fall_table$dev_exp)`
 
-```{r model-{{mod_num}}-fall-fit-plots, fig.cap = paste0("DHARMa output for model ", {{mod_num}}, " including qq plot for the residuals, overall model fit, and fit for the year effect."), cache = TRUE}
+`r no_conv_issues <- ifelse(is.na(temp_fall_table$AIC), FALSE, TRUE) `
+
+`r if(no_conv_issues == FALSE) paste0("Model had issues with convergence or the hessian matrix was not invertible.")`
+
+```{r model-{{mod_num}}-fall-fit-plots, fig.cap = paste0("DHARMa output for model ", {{mod_num}}, " including qq plot for the residuals, overall model fit, and fit for the year effect."), cache = TRUE, eval = no_conv_issues}
 
 dir <- paste0("glmmTMB/model_fall_", {{mod_num}})
 
@@ -77,7 +81,7 @@ files_to_exclude <- c(collage_file, modelfit_file, yearfit_file, qqplot_file, ro
 
 otherfit_files <- base::setdiff(files, files_to_exclude)
 
-run_other_plots <- ifelse(length(otherfit_files) == 0, FALSE, TRUE)
+run_other_plots <- ifelse(length(otherfit_files) == 0 | no_conv_issues == FALSE, FALSE, TRUE)
 
 ```
 
@@ -118,7 +122,7 @@ print(collage_plot)
 
 
 
-```{r rootgram-model-{{mod_num}}-fall, fig.height = 5, fig.width = 5, fig.cap = paste0("Hanging rootgram for fall model ", {{mod_num}}, "."), cache = TRUE}
+```{r rootgram-model-{{mod_num}}-fall, fig.height = 5, fig.width = 5, fig.cap = paste0("Hanging rootgram for fall model ", {{mod_num}}, "."), cache = TRUE, eval = no_conv_issues}
 
 
 

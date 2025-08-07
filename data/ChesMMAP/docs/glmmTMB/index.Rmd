@@ -8,7 +8,7 @@ author:
 institute:
   - MDDNR: Maryland Department of Natural Resources, 580 Taylor Avenue B-2, Annapolis, MD 21401
 
-date: "`r Sys.Date()`"
+date: "`r paste0('Last updated: ', format(Sys.time(), '%a %b %d %Y %X'))`"
 site: bookdown::bookdown_site
 documentclass: article
 bibliography: [litcited.bib]
