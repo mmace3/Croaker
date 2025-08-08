@@ -386,8 +386,8 @@ for(j in unique(models_glmmTMB$season)) {
                              data = temp_my_data, 
                              family = nbinom2)
   
-  null_dev_temp <- summary(null_model_temp)[["logLik"]][1] * -2
-  
+  # null_dev_temp <- summary(null_model_temp)[["logLik"]][1] * -2
+  null_dev_temp <- deviance(null_model_temp)
   
   n_temp <- nrow(subset(models_glmmTMB, season == j))
   print(paste0("This is season ", j))
@@ -411,8 +411,9 @@ for(j in unique(models_glmmTMB$season)) {
       temp_AIC <- AIC(temp_model)
       
       
-      summary_temp_model <- summary(temp_model)
-      res_dev <- -2*summary_temp_model[["logLik"]][1]
+      # summary_temp_model <- summary(temp_model)
+      # res_dev <- -2*summary_temp_model[["logLik"]][1]
+      res_dev <- deviance(temp_model)
       
       temp_dev_exp <- (1 - (res_dev/null_dev_temp))*100
       
